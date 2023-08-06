@@ -1,0 +1,19 @@
+version: '3.8'
+name: 'english-ua'
+
+services:
+  frontend:
+    build: .
+    container_name: english-ua-frontend
+    ports:
+      - '3000:3000'
+    networks:
+      - english-ua-network
+
+#if "network english-ua-network declared as external, but could not be found"
+#start script "docker network create english-ua-network"
+networks:
+  english-ua-network:
+    external: true
+    driver: bridge
+    name: english-ua-network
