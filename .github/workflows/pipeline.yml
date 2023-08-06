@@ -1,0 +1,74 @@
+name: EnglishUa Frontend CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    tags:
+      - '*'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  danger-review:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Ruby 3.0
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+          bundler-cache: true
+
+      - name: Install Danger
+        run: gem install danger-gitlab
+
+      - name: Run Danger
+        run: danger --fail-on-errors=true
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.ENGLISH_UA_GITHUB_TOKEN }}
+
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build React app
+        run: npm run build
+
+  semantic-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.schedule == null }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install -g semantic-release @semantic-release/github @semantic-release/changelog @semantic-release/git @semantic-release/exec
+
+      - name: Run Semantic Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ENGLISH_UA_GITHUB_TOKEN }}
